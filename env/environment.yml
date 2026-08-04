@@ -1,0 +1,19 @@
+name: piawka-paper
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.10
+  - pip
+  - bcftools
+  - tabix
+  - piawka
+  - r-base
+  - r-ggplot2
+  - r-dplyr
+  - r-tidyr
+  - r-readr
+  - r-patchwork
+  - r-stringr
+  - pip:
+      - git+https://github.com/ksamuk/pixy.git@master

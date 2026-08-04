@@ -1,0 +1,47 @@
+# Claude Code / Agent-related files
+.claude/
+CLAUDE.md
+
+# Large files (>50MB won't fit in git push)
+*.zip
+*.tar
+*.tar.gz
+*.tar.bz2
+*.vcf
+*.vcf.gz
+*.vcf.gz.tbi
+*.bam
+*.bai
+
+# Generated benchmark data (regenerable from scripts)
+results/accuracy/
+results/data_gain/
+results/inputs/
+results/logs/
+results/multiallelic_check/
+results/resource_usage/
+results/resource_usage_*/
+results/staging/
+
+# Keep results/tables (aggregated TSVs for the paper)
+!results/tables/
+
+# Local piawka installation
+tools/piawka/
+
+# Editor temporary files
+*.swp
+*.swo
+*~
+*.un~
+.DS_Store
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/

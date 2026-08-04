@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import pathlib
 import random
+import subprocess
+import sys
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -416,6 +418,15 @@ def main() -> int:
     fig.tight_layout(rect=[0, 0.02, 1, 0.97])
     fig.savefig(FIG_SUPP / "supplementary_real_pi_along_chromosome.png", dpi=300)
     plt.close(fig)
+
+    # Call R script for additional figures
+    r_script = ROOT / "scripts" / "make_figures.R"
+    if r_script.exists():
+        print("Generating R-based figures...")
+        result = subprocess.run(["Rscript", str(r_script)], check=False)
+        if result.returncode != 0:
+            print("Warning: R script execution failed, but continuing with Python figures", file=sys.stderr)
+
     return 0
 
 
