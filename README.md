@@ -118,21 +118,48 @@ raw per-run output directories are git-ignored. To re-run the benchmarks you nee
 
 | Path under `results/staging/` | What it is |
 | --- | --- |
-| `simulated/onepop.txt`, `simulated/bneck.txt` | lists of paths to the simulated VCFs (64 replicates each of the neutral and long-bottleneck scenarios) |
+| `simulated/onepop.txt`, `simulated/bneck.txt` | lists of paths to the simulated VCFs, one per replicate directory. Regenerate the VCFs from the committed recipes in [`slim/`](#simulated-data-slim) |
 | `simulated/syn_win.bed`, `simulated/syn_win_threads8.bed` | window definitions (one 10 Mbp window; eight 1.25 Mbp windows) |
 | `simulated/syn_groups.tsv` | sample→population map for the simulated data (all one population) |
 | `real/All_lyrata_final_allpos_1mbp.vcf.gz` (+ `.tbi`) | real *A. lyrata* VCF, `scaffold_1:1000001-2000000` |
 | `real/lyrata_win.bed`, `real/lyrata_groups.tsv` | 100 equal windows; ADMIXTURE population labels for the 815 analyzed samples |
 | `real/northsouth_piawka.bed`, `real/northsouth_pixy_fst.txt`, `real/genes.bed`, `real/supplementary_data_4_Lyrata_GWAS_SNPs.tsv` | inputs to the Figure 3 analysis |
 
-Simulations follow Zeitler & Gilbert (2024, *GBE* 16:evae139) with a nucleotide model, a Jukes–Cantor
-substitution matrix, and `simplifyNucleotides` enabled. The real dataset is from Glushkevich et al.
-(2026, bioRxiv 2026.03.02.709016), accessed via <https://www.arabidopsislyrata.org/>.
+The real dataset is from Glushkevich et al. (2026, bioRxiv 2026.03.02.709016), accessed via
+<https://www.arabidopsislyrata.org/>.
+
+## Simulated data (`slim/`)
+
+The simulated VCFs are not committed, but the SLiM recipes that generate them are, under `slim/`: one
+directory per replicate, each holding the `infile_nuc.txt` that produced that replicate's `out.vcf.gz`.
+There are 128 replicates — 64 per scenario, matching the set the benchmarks used.
+
+```bash
+cd slim/rohOutput_Demoonepop10000_NeuTRUE_Mu7e-08_Matingoutc100_Rep82
+slim infile_nuc.txt      # writes out.vcf in the working directory
+```
+
+Simulations follow Zeitler & Gilbert (2024, *GBE* 16:evae139), modified as described in the paper: a
+nucleotide-based model, the single mutation rate expanded to a Jukes–Cantor matrix at the same rate
+(`mmJukesCantor(7e-08)`), and `simplifyNucleotides=T` on output. Each recipe simulates one 10 Mbp
+chromosome, recombination 1e-8, and samples 100 diploids at generation 55000. The two scenarios are
+distinguished by demography alone:
+
+- **`Demoonepop10000`** ("neutral") — constant N = 10,000.
+- **`DemobneckLong10000`** ("bottleneck") — N = 10,000, dropped to 100 at generation 50000 and restored
+  at 52500.
+
+### Random seeds
+
+Every recipe carries an explicit `setSeed(...)` in `initialize()`, so each replicate is individually
+reproducible. Within a scenario every seed is unique. Where the same replicate number occurs in both
+scenarios the two share a seed by design, making those a matched pair that differs only in demography.
 
 ## Repository layout
 
 ```
 env/environment.yml   pinned conda environment
+slim/                 SLiM recipes for the simulated replicates (one dir per replicate)
 scripts/              benchmark wrappers, aggregation, plotting
 results/tables/       aggregated, analysis-ready TSVs (committed)
 figures/main/         f1.png, f2.png, f3.png
