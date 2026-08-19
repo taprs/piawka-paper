@@ -68,6 +68,11 @@ This runs, then aggregates into `results/tables/` via `scripts/analyze_benchmark
 4. **Multiallelic** (Figure 2C) — the same real windows plus all simulated VCFs, with `piawka --mult`
    and `pixy --include_multiallelic_snps`.
 
+One caveat on exact reproduction: the committed `resource_usage_timing.tsv` comes from runs that also
+computed `theta_w` (`-s pi,lines,miss,theta_w`), whereas the script now uses the command reported in the
+paper (`-s pi,lines,miss`). A re-run will therefore give slightly faster piawka timings than the committed
+table. This does not affect any conclusion.
+
 To re-aggregate only, once raw outputs exist under `results/`:
 
 ```bash
