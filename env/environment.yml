@@ -3,8 +3,16 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
-  # piawka version benchmarked in the paper.
-  - piawka=0.9.0
+  # piawka 0.9.1 carries the fixes that were applied by hand while preparing the
+  # benchmarks, so it — not the 0.9.0 named in the paper text — is the version
+  # that reproduces them.
+  #
+  # NOTE: 0.9.1 is tagged upstream but the bioconda recipe has not landed yet
+  # (bioconda currently tops out at 0.9.0), so this pin will not solve until it
+  # does. Until then, drop this line and install piawka from the tag instead:
+  #   git clone --branch 0.9.1 --depth 1 https://github.com/novikovalab/piawka.git
+  #   export PIAWKA_BIN="$PWD/piawka/piawka"
+  - piawka=0.9.1
   - htslib=1.24
   - bcftools=1.24
   - tabix

@@ -32,9 +32,20 @@ conda env create -f env/environment.yml
 conda run -n piawka-paper Rscript -e 'install.packages("cvequality", repos="https://cloud.r-project.org")'
 ```
 
-The environment pins the exact tool versions benchmarked in the paper: **piawka 0.9.0** (bioconda) and
-**pixy 2.0.0.dev2**. The latter is an untagged `master` build, so it is pinned by commit
-(`fe3c9058`); the nearest tags around it are `2.0.0.beta14`–`2.0.0.beta17`.
+Tool versions are pinned to what reproduces the benchmarks:
+
+- **piawka 0.9.1.** The paper text names 0.9.0, but several fixes were applied by hand while the benchmarks
+  were being prepared; those fixes are released as 0.9.1, so 0.9.1 is the version to use. It is tagged
+  upstream but **not yet on bioconda** — until the recipe lands, drop the `piawka=0.9.1` line from
+  `env/environment.yml` and use the tag directly:
+
+  ```bash
+  git clone --branch 0.9.1 --depth 1 https://github.com/novikovalab/piawka.git
+  export PIAWKA_BIN="$PWD/piawka/piawka"   # honoured by scripts/run_piawka_benchmark.sh
+  ```
+
+- **pixy 2.0.0.dev2.** An untagged `master` build, so it is pinned by commit (`fe3c9058`); the nearest tags
+  around it are `2.0.0.beta14`–`2.0.0.beta17`.
 
 Benchmarks in the paper were run on a MacBook Pro M1 with 32 GB RAM. The timing wrappers use BSD
 `/usr/bin/time -l` and `ps`, so they are written for macOS; the analysis and plotting steps are portable.
