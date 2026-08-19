@@ -4,7 +4,7 @@ Code to reproduce the benchmarks and figures in:
 
 > Tikhomirov N, Novikova P. *piawka: effective calculator of nucleotide statistics for the thousand-genomes era.*
 
-The manuscript as submitted is in [`manuscript/piawka_paper.pdf`](manuscript/piawka_paper.pdf).
+The manuscript itself is not distributed from this repository.
 
 `piawka` itself lives at <https://github.com/novikovalab/piawka> — this repository only contains the
 benchmarking code that compares it against [`pixy`](https://github.com/ksamuk/pixy).
@@ -136,7 +136,6 @@ env/environment.yml   pinned conda environment
 scripts/              benchmark wrappers, aggregation, plotting
 results/tables/       aggregated, analysis-ready TSVs (committed)
 figures/main/         f1.png, f2.png, f3.png
-manuscript/           submitted PDF
 ```
 
 | Script | Role |

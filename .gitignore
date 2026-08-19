@@ -26,6 +26,9 @@ results/staging/
 # Keep results/tables (aggregated TSVs for the paper)
 !results/tables/
 
+# Manuscript (not distributed from this repo)
+manuscript/
+
 # Local piawka installation (piawka now comes pinned from bioconda, see env/)
 tools/piawka/
 
