@@ -2,7 +2,7 @@
 set -euo pipefail
 
 if [[ $# -lt 8 ]]; then
-  echo "Usage: $0 <vcf.gz> <stats_csv> <mode:full|windowed> <window_or_NA> <out_prefix> <groups_tsv> <chrom_limit> <site_limit>" >&2
+  echo "Usage: $0 <vcf.gz> <stats_csv> <mode:full|windowed> <window_or_NA> <out_prefix> <groups_tsv> <chrom_limit> <site_limit> [--include_multiallelic_snps]" >&2
   exit 1
 fi
 
@@ -14,6 +14,7 @@ OUT_PREFIX="$5"
 POP_FILE="$6"
 CHROM_LIMIT="$7"
 SITE_LIMIT="$8"
+PIXY_EXTRA_FLAG="${9:-}"
 PIXY_BIN="${PIXY_BIN:-pixy}"
 PIXY_N_CORES="${PIXY_N_CORES:-}"
 
@@ -57,6 +58,9 @@ else
   pixy_cmd+=(--window_size 10000)
 fi
 pixy_cmd+=(--bypass_invariant_check)
+if [[ "${PIXY_EXTRA_FLAG}" == "--include_multiallelic_snps" ]]; then
+  pixy_cmd+=(--include_multiallelic_snps)
+fi
 
 if [[ "${DEBUG_PIXY_CMD:-0}" == "1" ]]; then
   printf 'POP_FILE=%s\n' "${POP_FILE}" >&2

@@ -1,4 +1,12 @@
 #!/usr/bin/env bash
+# Runs the three benchmarks reported in the paper:
+#   1. Resource usage (simulated data, piawka vs pixy at 1/2/4/8 parallel processes)  -> Figure 1B
+#   2. Window-size effect on memory (simulated data, 1 process, 10 Mbp vs 8x1.25 Mbp) -> Figure 1A
+#   3. Data gain + multiallelic pi (real A. lyrata data, and simulated for the
+#      multiallelic comparison)                                                       -> Figure 2
+#
+# Figure 3 (North/South gene-wise Fst) is a separate, independent analysis; see
+# scripts/run_northsouth_fst_comparison.sh.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -8,23 +16,21 @@ STAGE_DIR="${BENCH_DIR}/staging"
 STAGE_SIM_DIR="${STAGE_DIR}/simulated"
 STAGE_REAL_DIR="${STAGE_DIR}/real"
 RES_DIR="${BENCH_DIR}/resource_usage"
-ACC_DIR="${BENCH_DIR}/accuracy"
+WIN_DIR="${BENCH_DIR}/resource_usage_compare_1thread"
 GAIN_DIR="${BENCH_DIR}/data_gain"
 MULTI_DIR="${BENCH_DIR}/multiallelic_check"
 LOG_DIR="${BENCH_DIR}/logs"
-mkdir -p "${INPUT_DIR}" "${STAGE_SIM_DIR}" "${STAGE_REAL_DIR}" "${RES_DIR}" "${ACC_DIR}" "${GAIN_DIR}" "${MULTI_DIR}" "${LOG_DIR}" "${BENCH_DIR}/tables"
+mkdir -p "${INPUT_DIR}" "${STAGE_SIM_DIR}" "${STAGE_REAL_DIR}" "${RES_DIR}" "${WIN_DIR}" "${GAIN_DIR}" "${MULTI_DIR}" "${LOG_DIR}" "${BENCH_DIR}/tables"
 
-# Updated instruction paths.
-NIKITA_ROOT="/Users/ntikhomirov/MPIPZ/netscratch/dep_mercier/grp_novikova/nikita/piawka_paper"
-ONEPOP_LIST="${NIKITA_ROOT}/onepop.txt"
-BNECK_LIST="${NIKITA_ROOT}/bneck.txt"
-SYN_WIN="${NIKITA_ROOT}/syn_win.bed"
-SYN_GROUPS="${NIKITA_ROOT}/syn_groups.tsv"
-LYRATA_VCF="${NIKITA_ROOT}/All_lyrata_final_allpos_1mbp.vcf.gz"
-LYRATA_WIN="${NIKITA_ROOT}/lyrata_win.bed"
-LYRATA_GROUPS="${NIKITA_ROOT}/lyrata_groups.tsv"
-ADD_MISSING_AWK="/Users/ntikhomirov/MPIPZ/netscratch/dep_mercier/grp_novikova/nikita/scripts/vcf_analysis/add_missing.awk"
-MISSING_RATES=("0.05" "0.10" "0.20" "0.40")
+# Staged data files (relative to project root).
+ONEPOP_LIST="${STAGE_SIM_DIR}/onepop.txt"
+BNECK_LIST="${STAGE_SIM_DIR}/bneck.txt"
+SYN_WIN="${STAGE_SIM_DIR}/syn_win.bed"                    # one 10 Mbp window (whole file)
+SYN_WIN_8="${STAGE_SIM_DIR}/syn_win_threads8.bed"         # eight equal 1.25 Mbp windows
+SYN_GROUPS="${STAGE_SIM_DIR}/syn_groups.tsv"
+LYRATA_VCF="${STAGE_REAL_DIR}/All_lyrata_final_allpos_1mbp.vcf.gz"
+LYRATA_WIN="${STAGE_REAL_DIR}/lyrata_win.bed"
+LYRATA_GROUPS="${STAGE_REAL_DIR}/lyrata_groups.tsv"
 RESOURCE_THREADS=("1" "2" "4" "8")
 
 file_hash() {
@@ -36,53 +42,25 @@ file_hash() {
   fi
 }
 
-if [[ -x "${ROOT_DIR}/tools/piawka/piawka" ]]; then
-  export PIAWKA_BIN="${ROOT_DIR}/tools/piawka/piawka"
-fi
-if [[ -x "/Users/ntikhomirov/mambaforge/envs/piawka-paper-py/bin/pixy" ]]; then
-  export PIXY_BIN="/Users/ntikhomirov/mambaforge/envs/piawka-paper-py/bin/pixy"
+if command -v pixy >/dev/null 2>&1; then
+  export PIXY_BIN="$(command -v pixy)"
 fi
 
-# Copy all static benchmark inputs into workspace to reduce filesystem latency.
-LOCAL_SYN_WIN="${STAGE_SIM_DIR}/syn_win.bed"
-LOCAL_SYN_GROUPS="${STAGE_SIM_DIR}/syn_groups.tsv"
-LOCAL_LYRATA_WIN="${STAGE_REAL_DIR}/lyrata_win.bed"
-LOCAL_LYRATA_GROUPS="${STAGE_REAL_DIR}/lyrata_groups.tsv"
 LOCAL_LYRATA_GROUPS_CLEAN="${STAGE_REAL_DIR}/lyrata_groups.noheader.tsv"
-LOCAL_LYRATA_VCF="${STAGE_REAL_DIR}/$(basename "${LYRATA_VCF}")"
-LOCAL_LYRATA_TBI="${LOCAL_LYRATA_VCF}.tbi"
-ensure_local_file() {
-  local src="$1"
-  local dst="$2"
-  local label="$3"
-  if [[ -f "${src}" ]]; then
-    cp -f "${src}" "${dst}"
-  elif [[ ! -f "${dst}" ]]; then
-    echo "Missing required input: ${label} (${src} or ${dst})" >&2
+for f in "${SYN_WIN}" "${SYN_GROUPS}" "${LYRATA_WIN}" "${LYRATA_GROUPS}" "${LYRATA_VCF}"; do
+  if [[ ! -f "${f}" ]]; then
+    echo "Missing required input: ${f}" >&2
     exit 1
   fi
-}
-ensure_local_file "${SYN_WIN}" "${LOCAL_SYN_WIN}" "syn window bed"
-ensure_local_file "${SYN_GROUPS}" "${LOCAL_SYN_GROUPS}" "syn groups file"
-ensure_local_file "${LYRATA_WIN}" "${LOCAL_LYRATA_WIN}" "lyrata window bed"
-ensure_local_file "${LYRATA_GROUPS}" "${LOCAL_LYRATA_GROUPS}" "lyrata groups file"
-ensure_local_file "${LYRATA_VCF}" "${LOCAL_LYRATA_VCF}" "lyrata vcf"
-awk 'BEGIN{FS=OFS="\t"} NR==1 {h=tolower($1); if (h=="sample_name" || h=="sample" || h=="sampleid") next} NF>=2 {print $1,$2}' "${LOCAL_LYRATA_GROUPS}" > "${LOCAL_LYRATA_GROUPS_CLEAN}"
-if [[ -f "${LYRATA_VCF}.tbi" && ! -f "${LOCAL_LYRATA_TBI}" ]]; then
-  cp -f "${LYRATA_VCF}.tbi" "${LOCAL_LYRATA_TBI}"
-fi
+done
+awk 'BEGIN{FS=OFS="\t"} NR==1 {h=tolower($1); if (h=="sample_name" || h=="sample" || h=="sampleid") next} NF>=2 {print $1,$2}' "${LYRATA_GROUPS}" > "${LOCAL_LYRATA_GROUPS_CLEAN}"
 
-# Use a workspace-local copy of add_missing.awk to avoid intermittent external FS failures.
-LOCAL_ADD_MISSING_AWK="${INPUT_DIR}/add_missing.awk"
-if [[ -f "${ADD_MISSING_AWK}" ]]; then
-  cp "${ADD_MISSING_AWK}" "${LOCAL_ADD_MISSING_AWK}"
-elif [[ ! -f "${LOCAL_ADD_MISSING_AWK}" ]]; then
-  echo "Missing required input: add_missing.awk (${ADD_MISSING_AWK} or ${LOCAL_ADD_MISSING_AWK})" >&2
-  exit 1
+# The 8-window BED is a plain split of the single-window BED; derive it if absent.
+if [[ ! -f "${SYN_WIN_8}" ]]; then
+  awk 'BEGIN{FS=OFS="\t"} {n=8; w=int(($3-$2)/n); for (i=0;i<n;i++) print $1, $2+i*w, (i==n-1 ? $3 : $2+(i+1)*w)}' "${SYN_WIN}" > "${SYN_WIN_8}"
 fi
 
 MANIFEST_NOMISS="${INPUT_DIR}/sim_nomissing_manifest.tsv"
-MANIFEST_MISSING="${INPUT_DIR}/sim_missing_manifest.tsv"
 emit_manifest_rows() {
   local class_name="$1"
   local list_file="$2"
@@ -120,24 +98,8 @@ else
   exit 1
 fi
 
-echo -e "sample_id\tsource_class\tmissing_rate\tvcf_path" > "${MANIFEST_MISSING}"
-
-echo "Preparing missing-data simulated inputs..."
-tail -n +2 "${MANIFEST_NOMISS}" | while IFS=$'\t' read -r sample_id source_class vcf_path; do
-  for rate in "${MISSING_RATES[@]}"; do
-    rate_tag="r$(echo "${rate}" | tr -d '.')"
-    out_dir="${INPUT_DIR}/missing/${rate_tag}"
-    out_vcf="${out_dir}/${sample_id}.vcf.gz"
-    mkdir -p "${out_dir}"
-    if [[ ! -f "${out_vcf}" || ! -f "${out_vcf}.tbi" ]]; then
-      bgzip -cd "${vcf_path}" | awk -v MIN="${rate}" -v MAX="${rate}" -f "${LOCAL_ADD_MISSING_AWK}" | bgzip -c > "${out_vcf}"
-      tabix -f "${out_vcf}"
-    fi
-    echo -e "${sample_id}\t${source_class}\t${rate}\t${out_vcf}" >> "${MANIFEST_MISSING}"
-  done
-done
-
-echo "Running resource usage benchmark (simulated, no missing)..."
+# --- Benchmark 1: resource usage vs number of parallel processes (Figure 1B) ---
+echo "Running resource usage benchmark (simulated)..."
 tail -n +2 "${MANIFEST_NOMISS}" | while IFS=$'\t' read -r sample_id _ vcf_path; do
   run_dir="${RES_DIR}/${sample_id}"
   mkdir -p "${run_dir}"
@@ -149,43 +111,40 @@ tail -n +2 "${MANIFEST_NOMISS}" | while IFS=$'\t' read -r sample_id _ vcf_path; 
     piawka_prefix="${run_dir}/piawka${suffix}"
     pixy_prefix="${run_dir}/pixy${suffix}"
     if [[ ! -f "${piawka_prefix}.time.tsv" ]]; then
-      PIAWKA_JOBS="${threads}" "${ROOT_DIR}/scripts/run_piawka_benchmark.sh" "${vcf_path}" "pi,lines,miss,theta_w" "windowed" "${LOCAL_SYN_WIN}" "${piawka_prefix}" "${LOCAL_SYN_GROUPS}"
+      PIAWKA_JOBS="${threads}" "${ROOT_DIR}/scripts/run_piawka_benchmark.sh" "${vcf_path}" "pi,lines,miss" "windowed" "${SYN_WIN}" "${piawka_prefix}" "${SYN_GROUPS}"
     fi
     if [[ ! -f "${pixy_prefix}.time.tsv" ]]; then
-      PIXY_N_CORES="${threads}" "${ROOT_DIR}/scripts/run_pixy_benchmark.sh" "${vcf_path}" "pi,watterson_theta" "windowed" "${LOCAL_SYN_WIN}" "${pixy_prefix}" "${LOCAL_SYN_GROUPS}" "NA" "NA"
+      PIXY_N_CORES="${threads}" "${ROOT_DIR}/scripts/run_pixy_benchmark.sh" "${vcf_path}" "pi" "windowed" "${SYN_WIN}" "${pixy_prefix}" "${SYN_GROUPS}" "NA" "NA"
     fi
   done
 done
 
-run_accuracy_benchmark() {
-  echo "Running accuracy benchmark (simulated + missing data)..."
-  tail -n +2 "${MANIFEST_MISSING}" | while IFS=$'\t' read -r sample_id _ rate vcf_path; do
-    rate_tag="r$(echo "${rate}" | tr -d '.')"
-    run_dir="${ACC_DIR}/${sample_id}/${rate_tag}"
+# --- Benchmark 2: window-size effect on memory, single process (Figure 1A) ---
+# Same VCFs, same single process, two BED files: one 10 Mbp window vs eight
+# 1.25 Mbp windows. Aggregated into
+# results/tables/resource_usage_1thread_synwin_vs_threads8.tsv.
+run_window_size_benchmark() {
+  echo "Running window-size comparison benchmark (simulated, 1 process)..."
+  tail -n +2 "${MANIFEST_NOMISS}" | while IFS=$'\t' read -r sample_id _ vcf_path; do
+    run_dir="${WIN_DIR}/${sample_id}"
     mkdir -p "${run_dir}"
-    if [[ ! -f "${run_dir}/piawka.time.tsv" ]]; then
-      "${ROOT_DIR}/scripts/run_piawka_benchmark.sh" "${vcf_path}" "pi,theta_w,theta_low" "windowed" "${LOCAL_SYN_WIN}" "${run_dir}/piawka" "${LOCAL_SYN_GROUPS}"
-    fi
-    if [[ ! -f "${run_dir}/pixy.time.tsv" ]]; then
-      "${ROOT_DIR}/scripts/run_pixy_benchmark.sh" "${vcf_path}" "pi,watterson_theta" "windowed" "${LOCAL_SYN_WIN}" "${run_dir}/pixy" "${LOCAL_SYN_GROUPS}" "NA" "NA"
-    fi
+    for win_tag in syn_win syn_win_threads8; do
+      if [[ "${win_tag}" == "syn_win" ]]; then
+        bed="${SYN_WIN}"
+      else
+        bed="${SYN_WIN_8}"
+      fi
+      if [[ ! -f "${run_dir}/piawka_${win_tag}.time.tsv" ]]; then
+        PIAWKA_JOBS="1" "${ROOT_DIR}/scripts/run_piawka_benchmark.sh" "${vcf_path}" "pi,lines,miss" "windowed" "${bed}" "${run_dir}/piawka_${win_tag}" "${SYN_GROUPS}"
+      fi
+      if [[ ! -f "${run_dir}/pixy_${win_tag}.time.tsv" ]]; then
+        PIXY_N_CORES="1" "${ROOT_DIR}/scripts/run_pixy_benchmark.sh" "${vcf_path}" "pi" "windowed" "${bed}" "${run_dir}/pixy_${win_tag}" "${SYN_GROUPS}" "NA" "NA"
+      fi
+    done
   done
 }
 
-run_biallelic_check() {
-  echo "Running biallelic-vs-multiallelic pi check..."
-  first_sample="$(awk 'BEGIN{FS="\t"} NR==2 {print $1; exit}' "${MANIFEST_NOMISS}")"
-  first_vcf="$(awk 'BEGIN{FS="\t"} NR==2 {print $3; exit}' "${MANIFEST_NOMISS}")"
-  if [[ -n "${first_sample}" && -n "${first_vcf}" ]]; then
-    bial_vcf="${MULTI_DIR}/${first_sample}.bial.vcf.gz"
-    if [[ ! -f "${bial_vcf}" || ! -f "${bial_vcf}.tbi" ]]; then
-      bcftools view -m2 -M2 -v snps "${first_vcf}" -Oz -o "${bial_vcf}"
-      tabix -f "${bial_vcf}"
-    fi
-    "${ROOT_DIR}/scripts/run_piawka_benchmark.sh" "${bial_vcf}" "pi" "windowed" "${LOCAL_SYN_WIN}" "${MULTI_DIR}/${first_sample}.piawka_bial" "${LOCAL_SYN_GROUPS}"
-  fi
-}
-
+# --- Benchmark 3a: data gain on real data (Figure 2A, 2B) ---
 run_data_gain_benchmark() {
   echo "Running data gain benchmark (real data windows)..."
   REAL_DIR="${GAIN_DIR}/real_lyrata"
@@ -198,11 +157,12 @@ run_data_gain_benchmark() {
     rm -f "${REAL_DIR}/pixy.time.tsv" "${REAL_DIR}/pixy.time.raw.log" "${REAL_DIR}/pixy.time.raw.log.group_metrics.tsv"
     rm -rf "${REAL_DIR}/pixy.pixy"
   fi
-  "${ROOT_DIR}/scripts/run_piawka_benchmark.sh" "${LOCAL_LYRATA_VCF}" "pi,lines" "windowed" "${LOCAL_LYRATA_WIN}" "${REAL_DIR}/piawka" "${LOCAL_LYRATA_GROUPS_CLEAN}"
-  "${ROOT_DIR}/scripts/run_pixy_benchmark.sh" "${LOCAL_LYRATA_VCF}" "pi" "windowed" "${LOCAL_LYRATA_WIN}" "${REAL_DIR}/pixy" "${LOCAL_LYRATA_GROUPS_CLEAN}" "NA" "NA"
+  "${ROOT_DIR}/scripts/run_piawka_benchmark.sh" "${LYRATA_VCF}" "pi,lines" "windowed" "${LYRATA_WIN}" "${REAL_DIR}/piawka" "${LOCAL_LYRATA_GROUPS_CLEAN}"
+  "${ROOT_DIR}/scripts/run_pixy_benchmark.sh" "${LYRATA_VCF}" "pi" "windowed" "${LYRATA_WIN}" "${REAL_DIR}/pixy" "${LOCAL_LYRATA_GROUPS_CLEAN}" "NA" "NA"
   printf "%s\n" "${current_hash}" > "${hash_stamp}"
 }
 
+# --- Benchmark 3b: biallelic vs multiallelic pi (Figure 2C, plus simulated) ---
 run_multiallelic_benchmark() {
   echo "Running multiallelic pi benchmark (piawka --mult)..."
   SIM_MULTI_DIR="${MULTI_DIR}/simulated_mult"
@@ -212,7 +172,7 @@ run_multiallelic_benchmark() {
   sim_jobs="${SIM_MULTI_DIR}/jobs.tsv"
   tail -n +2 "${MANIFEST_NOMISS}" | awk -F'\t' '{print $1"\t"$3}' > "${sim_jobs}"
   parallel -j 8 --colsep '\t' \
-    "if [[ ! -f '${SIM_MULTI_DIR}/{1}/piawka_mult.time.tsv' ]] || ! grep -q \$'\\tlines\\t' '${SIM_MULTI_DIR}/{1}/piawka_mult.piawka.bed' 2>/dev/null; then '${ROOT_DIR}/scripts/run_piawka_benchmark.sh' '{2}' 'pi,lines' 'windowed' '${LOCAL_SYN_WIN}' '${SIM_MULTI_DIR}/{1}/piawka_mult' '${LOCAL_SYN_GROUPS}' '--mult'; fi" \
+    "if [[ ! -f '${SIM_MULTI_DIR}/{1}/piawka_mult.time.tsv' ]] || ! grep -q \$'\\tlines\\t' '${SIM_MULTI_DIR}/{1}/piawka_mult.piawka.bed' 2>/dev/null; then '${ROOT_DIR}/scripts/run_piawka_benchmark.sh' '{2}' 'pi,lines' 'windowed' '${SYN_WIN}' '${SIM_MULTI_DIR}/{1}/piawka_mult' '${SYN_GROUPS}' '--mult'; fi" \
     :::: "${sim_jobs}"
 
   real_hash_stamp="${REAL_MULTI_DIR}/groups.sha256"
@@ -222,22 +182,28 @@ run_multiallelic_benchmark() {
     rm -f "${REAL_MULTI_DIR}/piawka_mult.piawka.bed" "${REAL_MULTI_DIR}/piawka_mult.time.tsv" "${REAL_MULTI_DIR}/piawka_mult.time.raw.log" "${REAL_MULTI_DIR}/piawka_mult.time.raw.log.group_metrics.tsv"
   fi
   if [[ ! -f "${REAL_MULTI_DIR}/piawka_mult.time.tsv" ]] || ! grep -q $'\tlines\t' "${REAL_MULTI_DIR}/piawka_mult.piawka.bed" 2>/dev/null; then
-    "${ROOT_DIR}/scripts/run_piawka_benchmark.sh" "${LOCAL_LYRATA_VCF}" "pi,lines" "windowed" "${LOCAL_LYRATA_WIN}" "${REAL_MULTI_DIR}/piawka_mult" "${LOCAL_LYRATA_GROUPS_CLEAN}" "--mult"
+    "${ROOT_DIR}/scripts/run_piawka_benchmark.sh" "${LYRATA_VCF}" "pi,lines" "windowed" "${LYRATA_WIN}" "${REAL_MULTI_DIR}/piawka_mult" "${LOCAL_LYRATA_GROUPS_CLEAN}" "--mult"
+  fi
+  if [[ "${current_hash}" != "${previous_hash}" ]]; then
+    rm -f "${REAL_MULTI_DIR}/pixy_mult.time.tsv" "${REAL_MULTI_DIR}/pixy_mult.time.raw.log" "${REAL_MULTI_DIR}/pixy_mult.time.raw.log.group_metrics.tsv"
+    rm -rf "${REAL_MULTI_DIR}/pixy_mult.pixy"
+  fi
+  if [[ ! -f "${REAL_MULTI_DIR}/pixy_mult.time.tsv" ]]; then
+    "${ROOT_DIR}/scripts/run_pixy_benchmark.sh" "${LYRATA_VCF}" "pi" "windowed" "${LYRATA_WIN}" "${REAL_MULTI_DIR}/pixy_mult" "${LOCAL_LYRATA_GROUPS_CLEAN}" "NA" "NA" "--include_multiallelic_snps"
   fi
   printf "%s\n" "${current_hash}" > "${real_hash_stamp}"
 }
 
-# Per request: run all benchmarks except resource usage in parallel.
-run_accuracy_benchmark > "${LOG_DIR}/accuracy.log" 2>&1 &
-pid_accuracy=$!
+# The window-size benchmark measures memory and must not share the machine with
+# the other stages; run it on its own, then the rest in parallel.
+run_window_size_benchmark > "${LOG_DIR}/window_size.log" 2>&1
+
 run_data_gain_benchmark > "${LOG_DIR}/data_gain.log" 2>&1 &
 pid_data_gain=$!
-run_biallelic_check > "${LOG_DIR}/biallelic_check.log" 2>&1 &
-pid_bial=$!
 run_multiallelic_benchmark > "${LOG_DIR}/multiallelic.log" 2>&1 &
 pid_multi=$!
 wait_status=0
-for pid in "${pid_accuracy}" "${pid_data_gain}" "${pid_bial}" "${pid_multi}"; do
+for pid in "${pid_data_gain}" "${pid_multi}"; do
   if ! wait "${pid}"; then
     wait_status=1
   fi

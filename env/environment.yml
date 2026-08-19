@@ -3,12 +3,16 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
+  # piawka version benchmarked in the paper.
+  - piawka=0.9.0
+  - htslib=1.24
+  - bcftools=1.24
+  - tabix
+  - gawk
+  - parallel
   - python=3.10
   - pip
-  - bcftools
-  - tabix
-  - piawka
-  - r-base
+  - r-base=4.5
   - r-ggplot2
   - r-dplyr
   - r-tidyr
@@ -16,4 +20,10 @@ dependencies:
   - r-patchwork
   - r-stringr
   - pip:
-      - git+https://github.com/ksamuk/pixy.git@master
+      # pixy version benchmarked in the paper reports itself as 2.0.0.dev2.
+      # It is an untagged master build; this commit is the exact one used.
+      # (Nearest tags around it: 2.0.0.beta14 ... 2.0.0.beta17.)
+      - git+https://github.com/ksamuk/pixy.git@fe3c90589985780c292e68cb4993c8845c0eb887
+# NOTE: the R package `cvequality` (used by scripts/analyze_real_pi_stats_tests.R)
+# is not packaged for conda. Install it from CRAN after creating the env:
+#   conda run -n piawka-paper Rscript -e 'install.packages("cvequality", repos="https://cloud.r-project.org")'

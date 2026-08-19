@@ -13,7 +13,7 @@ CLAUDE.md
 *.bam
 *.bai
 
-# Generated benchmark data (regenerable from scripts)
+# Generated benchmark data (regenerable from scripts) and staged inputs
 results/accuracy/
 results/data_gain/
 results/inputs/
@@ -26,8 +26,11 @@ results/staging/
 # Keep results/tables (aggregated TSVs for the paper)
 !results/tables/
 
-# Local piawka installation
+# Local piawka installation (piawka now comes pinned from bioconda, see env/)
 tools/piawka/
+
+# R default graphics device output
+Rplots.pdf
 
 # Editor temporary files
 *.swp

@@ -1,9 +1,0 @@
-tool	threads	n_runs	elapsed_sec	max_rss_kb
-piawka	1	1	19.563	24464.0
-pixy	1	1	5.207	301216.0
-piawka	2	1	10.696	41776.0
-pixy	2	1	10.937	547760.0
-piawka	4	1	8.697	75680.0
-pixy	4	1	7.114	867824.0
-piawka	8	1	4.515	143168.0
-pixy	8	1	4.936	1428192.0

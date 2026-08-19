@@ -1,0 +1,9 @@
+test	comparison	n	statistic	p_value
+pearson	sites_gained_abs_vs_pi_gain	1200	-0.267281324730374	4.46104198455856e-21
+spearman	sites_gained_abs_vs_pi_gain	1200	-0.278030998137357	9.66526086514947e-23
+pearson	sites_gained_pct_vs_pi_gain	1200	-0.0138530776981669	0.631648707708795
+spearman	sites_gained_pct_vs_pi_gain	1200	-0.0519112548896063	0.0722409570125479
+cv_percent	pi_cv_piawka	1199	64.8319906485136	NA
+cv_percent	pi_cv_pixy	1199	71.5490096066548	NA
+cv_equality_asymptotic	pi_cv_piawka_vs_pixy	1199	6.0229244037948	0.0141212285725061
+cv_equality_mslr	pi_cv_piawka_vs_pixy	1199	5.99633389634265	0.0143356375642921
