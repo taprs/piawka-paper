@@ -32,6 +32,7 @@ dependencies:
       # It is an untagged master build; this commit is the exact one used.
       # (Nearest tags around it: 2.0.0.beta14 ... 2.0.0.beta17.)
       - git+https://github.com/ksamuk/pixy.git@fe3c90589985780c292e68cb4993c8845c0eb887
+      - openpyxl
 # NOTE: the R package `cvequality` (used by scripts/analyze_real_pi_stats_tests.R)
 # is not packaged for conda. Install it from CRAN after creating the env:
 #   conda run -n piawka-paper Rscript -e 'install.packages("cvequality", repos="https://cloud.r-project.org")'

@@ -111,6 +111,12 @@ fetched automatically from Ensembl Plants BioMart by `scripts/fetch_go2000028_at
 docstring of `scripts/analyze_northsouth_fst_ranks.py` for input provenance, rank/percentile definitions,
 and why positional overlap against Ensembl's gene models was rejected in favour of the Phytozome crosswalk.
 
+To bundle the two `northsouth_fst_ranks_*.tsv` tables into a single Excel workbook (one sheet each):
+
+```bash
+conda run -n piawka-paper python scripts/collect_fst_tables.py   # -> results/tables/piawka_supplementary_data.xlsx
+```
+
 ## Input data
 
 Input and intermediate data are **not** committed (they are multiple GB); `results/staging/` and the
@@ -176,3 +182,4 @@ figures/main/         f1.png, f2.png, f3.png
 | `analyze_northsouth_fst_ranks.py` | builds the gene-wise F<sub>ST</sub> rank tables (Supplementary Tables 1–2) |
 | `plot_northsouth_fst_ranks.R` | Figure 3 |
 | `analyze_real_pi_stats_tests.R` | in-text correlation and CV-equality tests |
+| `collect_fst_tables.py` | bundles Supplementary Tables 1–2 into a single `.xlsx` |
