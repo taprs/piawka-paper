@@ -106,11 +106,12 @@ f2c <- ggplot(f2, aes(sites, pi, color = reorder(group, -pi), shape = tool)) +
   ) +
   scale_color_brewer(palette = "Dark2") +
   scale_shape_manual(
-    limits = c("pixy", "pixymult", "piawka", "mult"),
-    labels = c("pixy, biallelic", "pixy, multiallelic", "piawka, biallelic", "piawka, multiallelic"),
-    values = c(0, 5, 2, 6)
+    limits = c("piawka", "mult", "pixy", "pixymult"),
+    labels = c("piawka, biallelic", "piawka, multiallelic", "pixy, biallelic", "pixy, multiallelic"),
+    values = c(2, 6, 0, 5)
   ) +
   scale_y_log10(labels = function(x) sprintf("%.2f", x * 100)) +
+  guides(shape = guide_legend(order = 2), color = guide_legend(order = 1)) +
   labs(
     x = "Nucleotides used / 10Kbp\n(polymorphic + invariant)",
     y = "% nucleotide diversity / 10Kbp",
