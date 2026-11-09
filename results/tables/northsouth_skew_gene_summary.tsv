@@ -1,0 +1,4 @@
+gene_lyrata	common_name	piawka_sites	pixy_usable_sites	piawka_fst	piawka_fst_pixy_usable_sites	pixy_fst	numerator_of_piawka_only_sites_by_csq
+AL8G30400		102	41	0.4516	0.0540	0.05401	synonymous=1.46; missense=1.15; intron=1.10; 5_prime_utr=0.11; 3_prime_utr=0.00
+AL8G32370	OXS3	42	15	0.3675	0.0049	0.004937	3_prime_utr=0.62; 5_prime_utr=0.29; missense=0.20; intron=0.00; missense,3_prime_utr=0.00; synonymous=0.00; splice_region,missense=0.00
+AL6G49840	RBP-DR1	112	35	0.2540	0.0030	0.003049	missense=0.55; intron=0.16; splice_region,synonymous=0.09; 3_prime_utr=0.04; synonymous=0.02; 5_prime_utr=0.00; splice_region=0.00

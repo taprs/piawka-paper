@@ -1,0 +1,8 @@
+stage	description	elapsed_sec
+a	tabix only	1.493
+b	+ field splitting	5.634
+c	+ genotype scan	160.014
+d	piawka pi, 1 group	134.586
+e	piawka 5 stats, 1 group	135.662
+f	piawka pi, 12 groups	174.654
+g	piawka pi, 1 group, UTF-8 locale	134.853

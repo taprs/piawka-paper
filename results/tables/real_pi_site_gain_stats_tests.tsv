@@ -1,9 +1,9 @@
 test	comparison	n	statistic	p_value
-pearson	sites_gained_abs_vs_pi_gain	1200	-0.267281324730374	4.46104198455856e-21
-spearman	sites_gained_abs_vs_pi_gain	1200	-0.278030998137357	9.66526086514947e-23
-pearson	sites_gained_pct_vs_pi_gain	1200	-0.0138530776981669	0.631648707708795
-spearman	sites_gained_pct_vs_pi_gain	1200	-0.0519112548896063	0.0722409570125479
-cv_percent	pi_cv_piawka	1199	64.8319906485136	NA
-cv_percent	pi_cv_pixy	1199	71.5490096066548	NA
-cv_equality_asymptotic	pi_cv_piawka_vs_pixy	1199	6.0229244037948	0.0141212285725061
-cv_equality_mslr	pi_cv_piawka_vs_pixy	1199	5.99633389634265	0.0143356375642921
+pearson	sites_gained_abs_vs_pi_gain	800	-0.407409897634099	2.43729117826981e-33
+spearman	sites_gained_abs_vs_pi_gain	800	-0.434157388357165	4.15472171133168e-38
+pearson	sites_gained_pct_vs_pi_gain	800	-0.124145438970749	0.000432366897128153
+spearman	sites_gained_pct_vs_pi_gain	800	-0.171680822938786	1.07724350866845e-06
+cv_percent	pi_cv_piawka	799	70.4658486002471	NA
+cv_percent	pi_cv_pixy	799	77.2687105095629	NA
+cv_equality_asymptotic	pi_cv_piawka_vs_pixy	799	3.23646449650957	0.0720158891695829
+cv_equality_mslr	pi_cv_piawka_vs_pixy	799	3.26671096562427	0.0706992354646276

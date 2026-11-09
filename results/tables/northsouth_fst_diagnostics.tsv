@@ -1,0 +1,24 @@
+quantity	value	p_value
+n_genes_matched	29245	
+spearman_fst_all_genes	0.7837	0.0
+delta_pct_median_all_genes	-1.788	
+delta_pct_iqr_all_genes	-10.41..6.13	
+delta_pct_p5_p95_all_genes	-25.64..36.38	
+share_abs_delta_gt10_all_genes	0.4525	
+share_abs_delta_gt25_all_genes	0.1409	
+spearman_abs_delta_vs_pixy_no_snps	-0.1675	7.022603372750877e-183
+median_abs_delta_lowest_quartile_pixy_snps	11.483	
+median_abs_delta_other_quartiles	8.176	
+spearman_abs_delta_vs_piawka_denominator	-0.222	0.0
+gwas_snp_n	20	
+gwas_snp_wilcoxon_paired_delta	100.0	0.8694877624511719
+gwas_snp_piawka_top20_count	17/20	7.977671065600009e-10
+gwas_snp_piawka_median_pct	93.27	7.290176924828679e-08
+gwas_snp_pixy_top20_count	17/20	7.977671065600009e-10
+gwas_snp_pixy_median_pct	94.63	2.435425467446216e-08
+go2000028_n	83	
+go2000028_wilcoxon_paired_delta	1603.0	0.5250249150915328
+go2000028_piawka_top20_count	21/83	0.14280705076249983
+go2000028_piawka_median_pct	56.17	0.07913008234487717
+go2000028_pixy_top20_count	20/83	0.21010661306129358
+go2000028_pixy_median_pct	48.56	0.2043628469901872
