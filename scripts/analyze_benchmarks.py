@@ -5,7 +5,8 @@ import re
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-BENCH = ROOT / "results"
+import os
+BENCH = ROOT / "results" / os.environ.get("RESULTS_SUFFIX", "")  # RESULTS_SUFFIX: rerun output tree (see run_benchmarks.sh)
 TABLES = BENCH / "tables"
 TABLES.mkdir(parents=True, exist_ok=True)
 
@@ -21,28 +22,6 @@ def write_tsv(path: pathlib.Path, rows, fieldnames):
         w = csv.DictWriter(fh, fieldnames=fieldnames, delimiter="\t")
         w.writeheader()
         w.writerows(rows)
-
-
-def parse_time_files(base_dir: pathlib.Path):
-    rows = []
-    for tf in sorted(base_dir.rglob("*.time.tsv")):
-        run_id = tf.stem.replace(".time", "")
-        m = re.search(r"_t(\d+)$", run_id)
-        threads = int(m.group(1)) if m else 1
-        for row in read_tsv(tf):
-            rows.append(
-                {
-                    "sample_id": tf.parent.name,
-                    "run_id": run_id,
-                    "threads": threads,
-                    "tool": row.get("tool", ""),
-                    "elapsed_sec": row.get("elapsed_sec", ""),
-                    "cpu_total_sec": row.get("cpu_total_sec", ""),
-                    "max_rss_kb": row.get("max_rss_kb", ""),
-                    "time_file": str(tf),
-                }
-            )
-    return rows
 
 
 def read_piawka_pi(path: pathlib.Path):
@@ -79,7 +58,8 @@ def read_pixy_pi(path: pathlib.Path):
     out = {}
     rows = read_tsv(path)
     for r in rows:
-        key = (r["chromosome"], int(r["window_pos_1"]), int(r["window_pos_2"]), r["pop"])
+        # pixy >= 2.2 reports 1-based window starts; piawka BED starts are 0-based (pixy 2.0.0.beta14 reported them 0-based)
+        key = (r["chromosome"], int(r["window_pos_1"]) - 1, int(r["window_pos_2"]), r["pop"])
         out[key] = {
             "pi": float(r["avg_pi"]),
             "no_sites": float(r.get("no_sites", 0) or 0),
@@ -121,75 +101,17 @@ def build_multiallelic_pairs(bial_pi, mult_pi, bial_lines=None, mult_lines=None,
 
 
 def main():
-    # 1) Resource usage timing table
-    timing_rows = parse_time_files(BENCH / "resource_usage")
-    write_tsv(
-        TABLES / "resource_usage_timing.tsv",
-        timing_rows,
-        ["sample_id", "run_id", "threads", "tool", "elapsed_sec", "cpu_total_sec", "max_rss_kb", "time_file"],
-    )
-    # 1b) Window-size comparison at a single process: one 10 Mbp window
-    #     (syn_win.bed) vs eight 1.25 Mbp windows (syn_win_threads8.bed).
-    win_rows = []
-    for sample_dir in sorted((BENCH / "resource_usage_compare_1thread").glob("*")):
-        if not sample_dir.is_dir():
-            continue
-        for tool in ("piawka", "pixy"):
-            base_f = sample_dir / f"{tool}_syn_win.time.tsv"
-            cmp_f = sample_dir / f"{tool}_syn_win_threads8.time.tsv"
-            if not (base_f.exists() and cmp_f.exists()):
-                continue
-            base = read_tsv(base_f)[0]
-            cmp_ = read_tsv(cmp_f)[0]
-
-            def num(row, field):
-                v = row.get(field, "")
-                return float(v) if v not in ("", "NA") else None
-
-            base_t, cmp_t = num(base, "elapsed_sec"), num(cmp_, "elapsed_sec")
-            base_m, cmp_m = num(base, "max_rss_kb"), num(cmp_, "max_rss_kb")
-            win_rows.append(
-                {
-                    "sample_id": sample_dir.name,
-                    "tool": tool,
-                    "threads": 1,
-                    "window_set_baseline": "syn_win.bed",
-                    "window_set_compare": "syn_win_threads8.bed",
-                    "elapsed_sec_syn_win": base_t if base_t is not None else "",
-                    "elapsed_sec_syn_win_threads8": cmp_t if cmp_t is not None else "",
-                    "elapsed_ratio_threads8_over_syn_win": (cmp_t / base_t) if base_t else "",
-                    "max_rss_kb_syn_win": base_m if base_m is not None else "",
-                    "max_rss_kb_syn_win_threads8": cmp_m if cmp_m is not None else "",
-                    "max_rss_ratio_threads8_over_syn_win": (cmp_m / base_m) if base_m else "",
-                }
-            )
-    write_tsv(
-        TABLES / "resource_usage_1thread_synwin_vs_threads8.tsv",
-        win_rows,
-        [
-            "sample_id",
-            "tool",
-            "threads",
-            "window_set_baseline",
-            "window_set_compare",
-            "elapsed_sec_syn_win",
-            "elapsed_sec_syn_win_threads8",
-            "elapsed_ratio_threads8_over_syn_win",
-            "max_rss_kb_syn_win",
-            "max_rss_kb_syn_win_threads8",
-            "max_rss_ratio_threads8_over_syn_win",
-        ],
-    )
-
-    # 2) Simulated multiallelic pi comparison: pixy (resource usage) vs piawka --mult
+    # 1) Simulated multiallelic pi comparison (16 neutral replicates): piawka --mult (run_benchmarks.sh) vs the biallelic
+    #    piawka and pixy runs over the same 10 Mbp window (run_resource_sim16.sh, results/resource_sim16/<Rep>/win10000000_p1)
     sim_pairs = []
     for piawka_file in sorted((BENCH / "multiallelic_check" / "simulated_mult").glob("*/piawka_mult.piawka.bed")):
         sample = piawka_file.parent.name
-        pixy_candidates = list((BENCH / "resource_usage" / sample / "pixy.pixy").glob("*_pi.txt"))
+        base = ROOT / "results" / "resource_sim16" / sample / "win10000000_p1"
+        pixy_candidates = list((base / "pixy.pixy").glob("*_pi.txt"))
         if not pixy_candidates:
             continue
         pixy_dict = read_pixy_pi(pixy_candidates[0])
-        bial_file = BENCH / "resource_usage" / sample / "piawka.piawka.bed"
+        bial_file = base / "piawka.piawka.bed"
         if not bial_file.exists():
             continue
         bial_pi = read_piawka_pi(bial_file)
@@ -220,7 +142,7 @@ def main():
             "abs_diff_expected",
         ],
     )
-    # 3) Real-data per-window pi and site-gain comparisons
+    # 2) Real-data per-window pi and site-gain comparisons
     real_piawka_file = BENCH / "data_gain" / "real_lyrata" / "piawka.piawka.bed"
     real_pixy_pi_files = list((BENCH / "data_gain" / "real_lyrata" / "pixy.pixy").glob("*_pi.txt"))
     if real_piawka_file.exists() and real_pixy_pi_files:

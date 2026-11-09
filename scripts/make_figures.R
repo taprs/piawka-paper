@@ -18,34 +18,27 @@ dir.create(fig_main, showWarnings = FALSE, recursive = TRUE)
 
 theme_set(theme_bw())
 
-# Figure 1: resources
-f1 <- read_tsv(file.path(tables_dir, 'resource_usage_timing.tsv')) %>%
-  mutate(
-    scenario = ifelse(substr(sample_id, 15, 20) == "bneckL", "bottleneck", "neutral"),
-    scenario = factor(scenario, c("neutral", "bottleneck"))
-  )
+# Figure 1: resources, 16 rescaled neutral one-population replicates (scripts/run_resource_sim16.sh -> analyze_a2_scaling.py)
+scal <- read_tsv(file.path(tables_dir, "a2_scaling.tsv"), show_col_types = FALSE)
 
-fm <- read_tsv(file.path(tables_dir, 'resource_usage_1thread_synwin_vs_threads8.tsv')) %>%
-  pivot_longer(contains("max_rss_kb")) %>%
-  mutate(
-    window_size = ifelse(name == "max_rss_kb_syn_win", "10Mbp", "1.25Mbp"),
-    scenario = ifelse(substr(sample_id, 15, 20) == "bneckL", "bottleneck", "neutral"),
-    scenario = factor(scenario, c("neutral", "bottleneck"))
-  )
+# Figure 1A: peak memory vs window size (10 Mbp analysed as 0.625-10 Mbp windows, 1 process); thin lines = replicates, thick = median
+fw <- scal %>% filter(series == "sim_windows")
+f1a <- ggplot(fw, aes(window_mbp, max_rss_mb, color = tool)) +
+  geom_line(aes(group = interaction(replicate, tool)), alpha = 0.2) +
+  geom_point(alpha = 0.4, shape = 1) +
+  stat_summary(fun = median, geom = "line", linewidth = 1) +
+  stat_summary(fun = median, geom = "point", size = 2.5) +
+  scale_x_log10(breaks = c(0.625, 1.25, 2.5, 5, 10), labels = c("0.625", "1.25", "2.5", "5", "10")) +
+  scale_y_log10() +
+  labs(x = "Window size, Mbp", y = "Max RAM usage, MB", color = "Tool")
 
-# Figure 1A: memory use @ two window sizes
-f1a <- ggplot(fm, aes(factor(window_size), value, color = tool)) +
-  geom_line(aes(group = interaction(sample_id, tool, scenario), linetype = scenario), alpha = 0.2) +
-  geom_point(aes(shape = scenario)) +
-  scale_y_log10(labels = function(x) x / 1e6) +
-  scale_shape_manual(values = c(1, 4)) +
-  labs(x = "Window size, Mbp", y = "Max RAM usage, GB", color = "Tool")
-
-# Figure 1B: runtime
-f1b <- ggplot(f1, aes(factor(threads), elapsed_sec, color = tool)) +
-  geom_line(aes(group = interaction(sample_id, tool, scenario), linetype = scenario), alpha = 0.2) +
-  geom_point(aes(shape = scenario)) +
-  scale_shape_manual(values = c(1, 4)) +
+# Figure 1B: runtime vs number of parallel processes (eight 1.25 Mbp windows)
+ft <- scal %>% filter(series == "sim_threads")
+f1b <- ggplot(ft, aes(factor(processes), elapsed_sec, color = tool)) +
+  geom_line(aes(group = interaction(replicate, tool)), alpha = 0.2) +
+  geom_point(alpha = 0.4, shape = 1) +
+  stat_summary(fun = median, geom = "line", aes(group = tool), linewidth = 1) +
+  stat_summary(fun = median, geom = "point", size = 2.5) +
   labs(x = "# parallel processes", y = "Seconds elapsed", color = "Tool")
 
 # Figure 1 pileup

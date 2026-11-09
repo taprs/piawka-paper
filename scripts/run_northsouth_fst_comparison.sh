@@ -27,4 +27,4 @@ if [[ ! -s "${ANNOTATION}" ]]; then
 fi
 
 python3 "${ROOT_DIR}/scripts/analyze_northsouth_fst_ranks.py"
-Rscript "${ROOT_DIR}/scripts/plot_northsouth_fst_ranks.R"
+# Figure 3 / S3 and the jackknife CIs are built from these tables by the steps listed in README.md ("Gene-wise Fst").

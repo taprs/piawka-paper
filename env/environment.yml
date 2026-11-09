@@ -3,16 +3,8 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
-  # piawka 0.9.1 carries the fixes that were applied by hand while preparing the
-  # benchmarks, so it — not the 0.9.0 named in the paper text — is the version
-  # that reproduces them.
-  #
-  # NOTE: 0.9.1 is tagged upstream but the bioconda recipe has not landed yet
-  # (bioconda currently tops out at 0.9.0), so this pin will not solve until it
-  # does. Until then, drop this line and install piawka from the tag instead:
-  #   git clone --branch 0.9.1 --depth 1 https://github.com/novikovalab/piawka.git
-  #   export PIAWKA_BIN="$PWD/piawka/piawka"
-  - piawka=0.9.1
+  # piawka is NOT installed from conda for the benchmarks: the paper uses upstream commit 27e6ae3 (0.9.1 + 2 commits),
+  # which is not on bioconda (latest there: 0.9.0). The scripts take it from tools/piawka-27e6ae3 (see README, "Setup").
   - htslib=1.24
   - bcftools=1.24
   - tabix
@@ -20,18 +12,23 @@ dependencies:
   - parallel
   - python=3.10
   - pip
+  - numpy
+  - pandas
+  - scipy
   - r-base=4.5
   - r-ggplot2
   - r-dplyr
   - r-tidyr
   - r-readr
   - r-patchwork
+  - r-ggforce
+  - r-ggtext
   - r-stringr
+  - r-scales
+  - r-rcolorbrewer
   - pip:
-      # pixy version benchmarked in the paper reports itself as 2.0.0.dev2.
-      # It is an untagged master build; this commit is the exact one used.
-      # (Nearest tags around it: 2.0.0.beta14 ... 2.0.0.beta17.)
-      - git+https://github.com/ksamuk/pixy.git@fe3c90589985780c292e68cb4993c8845c0eb887
+      # pixy 2.2.3 is an untagged master build; this is the exact commit that was benchmarked.
+      - git+https://github.com/ksamuk/pixy.git@21c7c33dea315a035d6aff86caba018ab668864a
       - openpyxl
 # NOTE: the R package `cvequality` (used by scripts/analyze_real_pi_stats_tests.R)
 # is not packaged for conda. Install it from CRAN after creating the env:

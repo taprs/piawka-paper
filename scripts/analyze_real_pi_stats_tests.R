@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 # Statistical tests on real-data biallelic piawka vs pixy per-window pi
-# (results/tables/data_gain_pi_vs_site_gain.tsv):
+# (results/tables/data_gain_pi_vs_site_gain.tsv; the eight lineages of Figure 2, 800 windows):
 #
 #   1. Correlation between sites gained by piawka over pixy (absolute and
 #      percent) and the corresponding pi gain (piawka - pixy), per window.
@@ -22,6 +22,8 @@ root <- dirname(script_dir)
 tables_dir <- file.path(root, "results", "tables")
 
 df <- read.delim(file.path(tables_dir, "data_gain_pi_vs_site_gain.tsv"))
+# Same eight lineages as Figure 2 (make_figures.R): drop the MIX* and admixed labels
+df <- df[!grepl("mix", df$group, ignore.case = TRUE), ]
 df$pixy_pi <- as.numeric(df$pixy_pi)
 df$piawka_pi <- as.numeric(df$piawka_pi)
 df$pi_gain_piawka_vs_pixy <- as.numeric(df$pi_gain_piawka_vs_pixy)

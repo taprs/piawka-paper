@@ -51,3 +51,36 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+
+# Review files
+review1/artifacts/
+
+# review-response runs (large, regenerable)
+results/a1_twopop/
+results/pixy223/
+results/pixy223_versions.txt
+results/rerun_pixy223.log
+results/pre_review_raw_beta14.tar.zst
+results/a3_northsouth/
+results/a3_subsample/
+results/accuracy223/
+results/a2_real/
+results/a2_sim/
+results/a2_*.log
+results/a3_skew_sites/
+results/a5_archive/
+results/a2_large_archive/
+results/old_sims_archive/
+review1/
+
+# Archived supplementary figures/scripts (superseded by figures/supp/S1-S3, 2026-11-07)
+results/supp_archive/
+
+# Repo tidy 2026-11-08: everything under results/ except the aggregated tables stays local
+results/*
+!results/tables/
+results/*.log
+# piawka build used by the scripts (clone novikovalab/piawka, checkout 27e6ae3)
+tools/
+# Office lock files (workbook open in Excel)
+~$*

@@ -1,0 +1,37 @@
+// RESCALED x10 of the 10000-diploid model: N/10, mutation and recombination rates x10, generations /10.
+// theta = 4*N*mu and rho = 4*N*r are unchanged; all mutations are neutral.
+initialize() { 
+   setSeed(73522522);
+   initializeSLiMOptions(preventIncidentalSelfing=T,nucleotideBased=T);
+   initializeMutationTypeNuc("m1", 0.5, "f", 0.0);			// neutral
+   m1.convertToSubstitution = T;
+
+   initializeMutationTypeNuc("m2", 0.3,"e", -0.001);		// delet, exponential effect
+   m2.convertToSubstitution = T;
+
+   initializeMutationTypeNuc("m3", 0.02,"f", -1);		// delet, lethal effect
+   m3.convertToSubstitution = T;
+
+   initializeMutationTypeNuc("m4", 0.3,"e", 0.01);		// ben, exponential effect
+   m4.convertToSubstitution = T;
+
+   // set mutation proportions
+   initializeGenomicElementType("g1", c(m1,m2,m3,m4), c(1, 0, 0, 0), mmJukesCantor(7e-07));
+
+   // make total genome 10Mbp, with one recomb rate
+   initializeAncestralNucleotides(randomNucleotides(10000000));
+   initializeGenomicElement(g1, 0, 9999999);       // one chrom only
+   initializeRecombinationRate(1e-7, 9999999);
+
+}
+
+   // set DEMOGRAPHY (rescaled x10): one population of 1000 diploids, 100 diploids sampled after 5500 generations
+1 {
+       sim.addSubpop("p1", 1000);
+}
+5500 late() { 
+       subsampDiploids = sim.subpopulations.individuals;
+       sampledIndividuals = sample(subsampDiploids, 100);
+       outvcf = sampledIndividuals.genomes;
+       outvcf.outputVCF(filePath="out.vcf",simplifyNucleotides=T);
+}

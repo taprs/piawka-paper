@@ -85,7 +85,7 @@ def load_piawka():
         reader = csv.DictReader(fh, fieldnames=header, delimiter="\t")
         for row in reader:
             locus = row["locus"]
-            if locus == "-":
+            if locus == "-" or row["stat"] != "fst":
                 continue
             key = (row["chr"], row["start"], row["end"], locus)
             fst_by_interval[key] = float(row["value"])
@@ -99,7 +99,8 @@ def load_pixy(genes_by_interval):
     for row in read_tsv(PIXY_TXT):
         if row["avg_hudson_fst"] == "NA" or row["avg_hudson_fst"] == "":
             continue
-        bed_key = (row["chromosome"], row["window_pos_1"], row["window_pos_2"])
+        # pixy >= 2.2 reports 1-based window starts, genes.bed is 0-based
+        bed_key = (row["chromosome"], str(int(row["window_pos_1"]) - 1), row["window_pos_2"])
         locus = genes_by_interval.get(bed_key)
         if locus is None:
             unmatched += 1
